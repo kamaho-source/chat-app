@@ -2,3 +2,4 @@
 /scripts/dev-local.sh
 /scripts/dev-docker.sh
 /apps/backend/.mvn/wrapper/maven-wrapper.properties
+.DS_Store
