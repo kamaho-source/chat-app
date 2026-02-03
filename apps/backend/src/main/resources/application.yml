@@ -1,0 +1,39 @@
+server:
+  port: 8000
+  servlet:
+    session:
+      cookie:
+        name: ${SESSION_COOKIE_NAME:session_id}
+        same-site: lax
+        http-only: true
+
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:chatapp}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USER:chatapp}
+    password: ${DB_PASSWORD:chatapp}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 1GB
+      max-request-size: 1GB
+
+app:
+  storage:
+    base-dir: ${STORAGE_DIR:./data}
+  ai:
+    openrouter-api-key: ${OPENROUTER_API_KEY:}
+    model: ${OPENROUTER_MODEL:openrouter/auto}
+    enabled: ${OPENROUTER_ENABLED:false}
+  security:
+    frontend-origin: ${FRONTEND_ORIGIN:http://localhost:3000}
+    session-cookie-name: ${SESSION_COOKIE_NAME:session_id}
+  bootstrap:
+    enabled: ${BOOTSTRAP_ENABLED:true}
+    email: ${BOOTSTRAP_EMAIL:kid@example.com}
+    name: ${BOOTSTRAP_NAME:Kid}
+    password: ${BOOTSTRAP_PASSWORD:password123}
+    role: ${BOOTSTRAP_ROLE:ADMIN}

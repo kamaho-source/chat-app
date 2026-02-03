@@ -1,0 +1,71 @@
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: chatapp
+      MYSQL_USER: chatapp
+      MYSQL_PASSWORD: chatapp
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+  backend:
+    image: chat-app-backend:local
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    working_dir: /app
+    volumes:
+      - ./apps/backend:/app
+      - m2-cache:/root/.m2
+      - backend-data:/app/data
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: chatapp
+      DB_USER: chatapp
+      DB_PASSWORD: chatapp
+      FRONTEND_ORIGIN: http://localhost:3000
+      STORAGE_DIR: /app/data
+      OPENROUTER_ENABLED: "false"
+      SESSION_COOKIE_NAME: session_id
+      BOOTSTRAP_ENABLED: "true"
+      BOOTSTRAP_EMAIL: kid@example.com
+      BOOTSTRAP_NAME: Kid
+      BOOTSTRAP_PASSWORD: password123
+      BOOTSTRAP_ROLE: ADMIN
+    command: ./mvnw -q -DskipTests spring-boot:run
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+  frontend:
+    image: chat-app-frontend:local
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE: ""
+        NEXT_PUBLIC_WS_URL: /ws
+        BACKEND_URL: http://backend:8000
+    working_dir: /app
+    volumes:
+      - ./apps/frontend:/app
+    environment:
+      NEXT_PUBLIC_API_BASE: ""
+      NEXT_PUBLIC_WS_URL: /ws
+      BACKEND_URL: http://backend:8000
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: "false"
+      CHOKIDAR_USEPOLLING: "1"
+      WATCHPACK_POLLING: "1"
+    command: sh -c "npm install --no-fund --no-audit && npm run dev -- -H 0.0.0.0"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+volumes:
+  db-data:
+  m2-cache:
+  backend-data:
