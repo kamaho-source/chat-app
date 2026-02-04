@@ -247,26 +247,29 @@ export default function ChannelDetailPage() {
           <Stack spacing={2}>
             <Typography variant="h6">メッセージ</Typography>
             <Stack spacing={1}>
-              {messages.map((m, idx) => (
-                <Box key={m.id ?? `tmp-${idx}`} className="animate-pop" sx={{ p: 2, borderRadius: 2, bgcolor: "background.default" }}>
-                  <Typography variant="subtitle2">送信者: {m.senderName || m.senderId || "System"}</Typography>
-                  <Typography>{m.content}</Typography>
-                  {m.attachmentUrl && (
-                    <Typography variant="caption">添付: {m.attachmentUrl}</Typography>
-                  )}
-                  {m.id != null && (
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                      <TextField
-                        size="small"
-                        placeholder="編集内容"
-                        value={editContent[m.id] || ""}
-                        onChange={(e) => setEditContent((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                      />
-                      <Button size="small" onClick={() => updateMessage(m.id)}>編集</Button>
-                    </Stack>
-                  )}
-                </Box>
-              ))}
+              {messages.map((m, idx) => {
+                const messageId = m.id;
+                return (
+                  <Box key={messageId ?? `tmp-${idx}`} className="animate-pop" sx={{ p: 2, borderRadius: 2, bgcolor: "background.default" }}>
+                    <Typography variant="subtitle2">送信者: {m.senderName || m.senderId || "System"}</Typography>
+                    <Typography>{m.content}</Typography>
+                    {m.attachmentUrl && (
+                      <Typography variant="caption">添付: {m.attachmentUrl}</Typography>
+                    )}
+                    {messageId != null && (
+                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                        <TextField
+                          size="small"
+                          placeholder="編集内容"
+                          value={editContent[messageId] || ""}
+                          onChange={(e) => setEditContent((prev) => ({ ...prev, [messageId]: e.target.value }))}
+                        />
+                        <Button size="small" onClick={() => updateMessage(messageId)}>編集</Button>
+                      </Stack>
+                    )}
+                  </Box>
+                );
+              })}
             </Stack>
             <Divider />
             <TextField

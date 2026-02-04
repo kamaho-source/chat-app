@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   Avatar,
   Box,
@@ -16,7 +16,7 @@ import { fetchJson, patchWithCsrf, postFormWithCsrf } from "@/lib/api";
 import { UserSummary } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function UserEditPage() {
+function UserEditPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawId = searchParams.get("id");
@@ -183,5 +183,13 @@ export default function UserEditPage() {
         </Paper>
       </Container>
     </Box>
+  );
+}
+
+export default function UserEditPage() {
+  return (
+    <Suspense fallback={<Box sx={{ py: 8 }}><Container maxWidth="sm"><Typography>Loading...</Typography></Container></Box>}>
+      <UserEditPageContent />
+    </Suspense>
   );
 }

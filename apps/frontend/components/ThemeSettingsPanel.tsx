@@ -23,7 +23,7 @@ export default function ThemeSettingsPanel() {
           exclusive
           onChange={(_, value) => {
             if (!value) return;
-            const preset =
+            const preset: Partial<ThemeSettings> =
               value === "kids"
                 ? { uxMode: "kids", primary: "#1b8f7a", background: "#f7f2e7" }
                 : { uxMode: "work", primary: "#1e5aa8", background: "#f1f5fb" };
