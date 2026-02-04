@@ -85,7 +85,16 @@ export default function UserEditPage() {
     return (
       <Box sx={{ py: 8 }}>
         <Container maxWidth="sm">
-          <Typography>Loading...</Typography>
+          {error ? (
+            <Stack spacing={2}>
+              <Typography color="error">{error}</Typography>
+              <Button variant="outlined" onClick={() => router.push("/")}>
+                戻る
+              </Button>
+            </Stack>
+          ) : (
+            <Typography>Loading...</Typography>
+          )}
         </Container>
       </Box>
     );

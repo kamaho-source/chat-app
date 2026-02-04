@@ -254,15 +254,17 @@ export default function ChannelDetailPage() {
                   {m.attachmentUrl && (
                     <Typography variant="caption">添付: {m.attachmentUrl}</Typography>
                   )}
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                    <TextField
-                      size="small"
-                      placeholder="編集内容"
-                      value={editContent[m.id] || ""}
-                      onChange={(e) => setEditContent((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                    />
-                    <Button size="small" onClick={() => updateMessage(m.id)}>編集</Button>
-                  </Stack>
+                  {m.id != null && (
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                      <TextField
+                        size="small"
+                        placeholder="編集内容"
+                        value={editContent[m.id] || ""}
+                        onChange={(e) => setEditContent((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                      />
+                      <Button size="small" onClick={() => updateMessage(m.id)}>編集</Button>
+                    </Stack>
+                  )}
                 </Box>
               ))}
             </Stack>
