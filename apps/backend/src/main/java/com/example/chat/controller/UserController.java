@@ -21,7 +21,7 @@ import com.example.chat.service.*;
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
-  private static final long AVATAR_MAX_BYTES = 5L * 1024 * 1024;
+  private static final long AVATAR_MAX_BYTES = 300L * 1024 * 1024;
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final StorageService storageService;
@@ -73,7 +73,7 @@ public class UserController {
       return ResponseEntity.status(403).build();
     }
     if (file.getSize() > AVATAR_MAX_BYTES) {
-      return ResponseEntity.badRequest().body(Map.of("message", "Avatar must be <= 5MB"));
+      return ResponseEntity.badRequest().body(Map.of("message", "Avatar must be <= 300MB"));
     }
     return userRepository.findById(id).map(user -> {
       try {
@@ -114,12 +114,19 @@ public class UserController {
   }
 
   @PatchMapping("/{id}/password")
-  public ResponseEntity<?> adminPasswordChange(@PathVariable Long id, @Valid @RequestBody UpdatePasswordRequest request, Authentication authentication) {
+  public ResponseEntity<?> updatePassword(@PathVariable Long id, @Valid @RequestBody UpdatePasswordRequest request, Authentication authentication) {
     User me = (User) authentication.getPrincipal();
-    if (!isAdminOrManager(me)) {
+    boolean isSelf = me.getId().equals(id);
+    if (!isSelf && !isAdminOrManager(me)) {
       return ResponseEntity.status(403).build();
     }
+    if (isSelf && (request.currentPassword() == null || request.currentPassword().isBlank())) {
+      return ResponseEntity.badRequest().body(Map.of("message", "currentPassword required"));
+    }
     return userRepository.findById(id).map(user -> {
+      if (isSelf && !passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+        return ResponseEntity.status(400).body(Map.of("message", "currentPassword mismatch"));
+      }
       user.setPassword(passwordEncoder.encode(request.password()));
       userRepository.save(user);
       return ResponseEntity.ok(Map.of("message", "Password updated"));
@@ -149,7 +156,10 @@ public class UserController {
 
   public record UpdateStatusRequest(boolean active) {}
 
-  public record UpdatePasswordRequest(@NotBlank @Size(min = 8, max = 200) String password) {}
+  public record UpdatePasswordRequest(
+      @NotBlank @Size(min = 8, max = 200) String password,
+      @Size(min = 1, max = 200) String currentPassword
+  ) {}
 
   public record UserSummary(Long id, String email, String name, Role role, String avatarUrl, boolean active) {
     static UserSummary from(User user) {

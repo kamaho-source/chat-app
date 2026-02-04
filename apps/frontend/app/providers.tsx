@@ -13,11 +13,13 @@ import React, { createContext, useCallback, useEffect, useMemo, useRef, useState
 import SettingsDrawer from "@/components/SettingsDrawer";
 
 type ThemeModeSetting = "light" | "dark" | "system";
+type UxModeSetting = "kids" | "work";
 
 export type ThemeSettings = {
   mode: ThemeModeSetting;
   primary: string;
   background: string;
+  uxMode: UxModeSetting;
 };
 
 type ThemeSettingsContextValue = {
@@ -30,6 +32,7 @@ const DEFAULT_SETTINGS: ThemeSettings = {
   mode: "light",
   primary: "#2f7d32",
   background: "#f4f6f8",
+  uxMode: "kids",
 };
 
 export const ThemeSettingsContext = createContext<ThemeSettingsContextValue>({
@@ -50,6 +53,7 @@ function loadSettings(): ThemeSettings {
       mode: parsed.mode ?? DEFAULT_SETTINGS.mode,
       primary: parsed.primary ?? DEFAULT_SETTINGS.primary,
       background: parsed.background ?? DEFAULT_SETTINGS.background,
+      uxMode: parsed.uxMode ?? DEFAULT_SETTINGS.uxMode,
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -66,6 +70,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [settings, setSettingsState] = useState<ThemeSettings>(DEFAULT_SETTINGS);
   const [toastOpen, setToastOpen] = useState(false);
   const lastToastAt = useRef(0);
+  const redirectingRef = useRef(false);
 
   useEffect(() => {
     setSettingsState(loadSettings());
@@ -92,7 +97,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.style.backgroundColor = settings.background;
-  }, [settings.background]);
+    document.body.style.setProperty("--cw-accent", settings.primary);
+    document.body.style.setProperty("--cw-bg", settings.background);
+  }, [settings.background, settings.primary]);
 
   useEffect(() => {
     const originalFetch = window.fetch.bind(window);
@@ -100,6 +107,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       const response = await originalFetch(...args);
       try {
         const url = typeof args[0] === "string" ? args[0] : args[0] instanceof Request ? args[0].url : "";
+        const pathname = window.location.pathname;
+        const shouldRedirect =
+          (response.status === 401 || (response.status === 403 && url.includes("/api/auth/me"))) &&
+          pathname !== "/login" &&
+          pathname !== "/users/new";
+        if (shouldRedirect && !redirectingRef.current) {
+          redirectingRef.current = true;
+          window.location.href = "/login";
+          return response;
+        }
         if (url.includes("/api/channels") && response.status === 403) {
           const now = Date.now();
           if (now - lastToastAt.current > 3000) {
@@ -125,13 +142,27 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           primary: {
             main: settings.primary,
           },
+          secondary: {
+            main: "#f97316",
+          },
           background: {
             default: settings.background,
-            paper: resolvedMode === "dark" ? "#11151a" : "#ffffff",
+            paper: resolvedMode === "dark" ? "#121416" : "#ffffff",
           },
         },
         typography: {
           fontFamily: "var(--font-geist-sans)",
+          button: {
+            textTransform: "none",
+            fontWeight: 700,
+            letterSpacing: "0.01em",
+          },
+          fontSize: settings.uxMode === "kids" ? 15 : 14,
+          h4: {
+            fontWeight: 800,
+            letterSpacing: "-0.02em",
+            fontSize: settings.uxMode === "kids" ? "2rem" : "1.75rem",
+          },
           h3: {
             fontWeight: 700,
             letterSpacing: "-0.02em",
@@ -141,10 +172,66 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           },
         },
         shape: {
-          borderRadius: 12,
+          borderRadius: settings.uxMode === "kids" ? 18 : 14,
+        },
+        components: {
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: settings.uxMode === "kids" ? 16 : 12,
+                paddingLeft: settings.uxMode === "kids" ? 18 : 14,
+                paddingRight: settings.uxMode === "kids" ? 18 : 14,
+              },
+            },
+          },
+          MuiPaper: {
+            styleOverrides: {
+              root: {
+                border: "1px solid rgba(226, 214, 198, 0.8)",
+                boxShadow: "0 16px 32px rgba(25, 29, 32, 0.12)",
+              },
+            },
+          },
+          MuiAppBar: {
+            styleOverrides: {
+              root: {
+                backdropFilter: "blur(14px)",
+                backgroundColor: "rgba(255, 255, 255, 0.88)",
+              },
+            },
+          },
+          MuiDrawer: {
+            styleOverrides: {
+              paper: {
+                backgroundColor: "rgba(255, 255, 255, 0.92)",
+                backdropFilter: "blur(12px)",
+              },
+            },
+          },
+          MuiTextField: {
+            defaultProps: {
+              size: "medium",
+            },
+            styleOverrides: {
+              root: {
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 14,
+                  backgroundColor: "rgba(255, 253, 250, 0.95)",
+                },
+              },
+            },
+          },
+          MuiChip: {
+            styleOverrides: {
+              root: {
+                borderRadius: 999,
+                fontWeight: 600,
+              },
+            },
+          },
         },
       }),
-    [resolvedMode, settings.background, settings.primary]
+    [resolvedMode, settings.background, settings.primary, settings.uxMode]
   );
 
   return (

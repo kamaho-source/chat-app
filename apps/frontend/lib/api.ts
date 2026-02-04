@@ -28,9 +28,9 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
       ...(init?.headers || {}),
     },
   });
+  const raw = await res.text();
   if (!res.ok) {
     let message = `Request failed: ${res.status}`;
-    const raw = await res.text();
     if (raw) {
       try {
         const data = JSON.parse(raw);
@@ -44,7 +44,10 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
     (error as Error & { status?: number }).status = res.status;
     throw error;
   }
-  return res.json();
+  if (!raw) {
+    return {} as T;
+  }
+  return JSON.parse(raw) as T;
 }
 
 export async function postWithCsrf<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {

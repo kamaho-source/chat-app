@@ -7,4 +7,6 @@ import com.example.chat.model.*;
 
 public interface ProjectChannelRepository extends JpaRepository<ProjectChannel, Long> {
   List<ProjectChannel> findByProjectId(Long projectId);
+  List<ProjectChannel> findByChannelId(Long channelId);
+  void deleteByChannelId(Long channelId);
 }

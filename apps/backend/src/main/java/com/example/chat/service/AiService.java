@@ -41,11 +41,13 @@ public class AiService {
         .timeout(Duration.ofSeconds(30))
         .header("Authorization", "Bearer " + properties.getAi().getOpenrouterApiKey())
         .header("Content-Type", "application/json")
+        .header("HTTP-Referer", properties.getSecurity().getFrontendOrigin())
+        .header("X-Title", "chat-app")
         .POST(HttpRequest.BodyPublishers.ofString(body))
         .build();
     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() >= 400) {
-      return "AI response failed.";
+      return "AI response failed (HTTP " + response.statusCode() + ").";
     }
     JsonNode root = objectMapper.readTree(response.body());
     JsonNode content = root.path("choices").path(0).path("message").path("content");

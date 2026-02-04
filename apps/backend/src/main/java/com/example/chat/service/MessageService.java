@@ -112,6 +112,9 @@ public class MessageService {
     Optional<ChannelMember> member = channelMemberRepository.findByChannelIdAndUserId(channelId, user.getId());
     if (member.isEmpty()) {
       Channel channel = channelRepository.findById(channelId).orElseThrow();
+      if (!channel.isActive()) {
+        throw new IllegalStateException("Channel inactive");
+      }
       if (channel.isPrivate() && user.getRole() != Role.ADMIN && user.getRole() != Role.MANAGER) {
         throw new IllegalStateException("Forbidden");
       }
@@ -127,6 +130,9 @@ public class MessageService {
       return;
     }
     Channel channel = channelRepository.findById(channelId).orElseThrow();
+    if (!channel.isActive()) {
+      throw new IllegalStateException("Channel inactive");
+    }
     if (!channel.isPrivate()) {
       return;
     }

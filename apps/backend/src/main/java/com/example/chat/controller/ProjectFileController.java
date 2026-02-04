@@ -19,7 +19,7 @@ import com.example.chat.service.*;
 @RestController
 @RequestMapping("/api/projects")
 public class ProjectFileController {
-  private static final long FILE_MAX_BYTES = 5L * 1024 * 1024;
+  private static final long FILE_MAX_BYTES = 300L * 1024 * 1024;
   private final ProjectRepository projectRepository;
   private final ProjectFileRepository projectFileRepository;
   private final ProjectUserRepository projectUserRepository;
@@ -52,7 +52,7 @@ public class ProjectFileController {
       return ResponseEntity.status(403).build();
     }
     if (file.getSize() > FILE_MAX_BYTES) {
-      return ResponseEntity.badRequest().body(Map.of("message", "File must be <= 5MB"));
+      return ResponseEntity.badRequest().body(Map.of("message", "File must be <= 300MB"));
     }
     Project project = projectRepository.findById(id).orElse(null);
     if (project == null) {

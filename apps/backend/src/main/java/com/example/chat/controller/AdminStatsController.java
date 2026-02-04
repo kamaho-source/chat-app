@@ -42,7 +42,8 @@ public class AdminStatsController {
     }
 
     long userCount = userRepository.count();
-    long channelCount = channelRepository.count();
+    long channelCount = channelRepository.countByActiveTrue();
+    long privateChannelCount = channelRepository.countByIsPrivateTrueAndActiveTrue();
     long messageCount = messageRepository.count();
 
     List<Message> messages = messageRepository.findAll();
@@ -52,13 +53,22 @@ public class AdminStatsController {
 
     Map<LocalDate, Long> dailyUsage = messages.stream()
         .collect(Collectors.groupingBy(m -> LocalDate.ofInstant(m.getCreatedAt(), ZoneId.systemDefault()), Collectors.counting()));
+    LocalDate today = LocalDate.now(ZoneId.systemDefault());
+    long todayMessages = dailyUsage.getOrDefault(today, 0L);
 
-    return ResponseEntity.ok(Map.of(
-        "userCount", userCount,
-        "channelCount", channelCount,
-        "messageCount", messageCount,
-        "channelMessageCounts", channelMessageCounts,
-        "dailyUsage", dailyUsage
-    ));
+    Map<String, Object> payload = new java.util.HashMap<>();
+    payload.put("userCount", userCount);
+    payload.put("channelCount", channelCount);
+    payload.put("privateChannels", privateChannelCount);
+    payload.put("messageCount", messageCount);
+    payload.put("todayMessages", todayMessages);
+    payload.put("channelMessageCounts", channelMessageCounts);
+    payload.put("dailyUsage", dailyUsage);
+    payload.put("users", userCount);
+    payload.put("channels", channelCount);
+    payload.put("messages", messageCount);
+    payload.put("activeUsers", userCount);
+    payload.put("totalMessages", messageCount);
+    return ResponseEntity.ok(payload);
   }
 }

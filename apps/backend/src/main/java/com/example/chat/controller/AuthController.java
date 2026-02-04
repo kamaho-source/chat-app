@@ -29,7 +29,7 @@ import com.example.chat.service.*;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-  private static final long AVATAR_MAX_BYTES = 5L * 1024 * 1024;
+  private static final long AVATAR_MAX_BYTES = 300L * 1024 * 1024;
   private final AuthenticationManager authenticationManager;
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
@@ -73,7 +73,7 @@ public class AuthController {
       return ResponseEntity.badRequest().body(Map.of("message", "ID already registered"));
     }
     if (avatar != null && avatar.getSize() > AVATAR_MAX_BYTES) {
-      return ResponseEntity.badRequest().body(Map.of("message", "Avatar must be <= 5MB"));
+      return ResponseEntity.badRequest().body(Map.of("message", "Avatar must be <= 300MB"));
     }
     User user = new User();
     user.setEmail(userId);

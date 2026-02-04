@@ -12,19 +12,22 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { fetchJson, patchWithCsrf } from "@/lib/api";
+import { fetchJson, patchWithCsrf, postFormWithCsrf } from "@/lib/api";
 import { UserSummary } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function UserEditPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const targetId = Number(searchParams.get("id"));
+  const rawId = searchParams.get("id");
+  const targetId = rawId ? Number(rawId) : Number.NaN;
   const [me, setMe] = useState<UserSummary | null>(null);
   const [user, setUser] = useState<UserSummary | null>(null);
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserSummary["role"]>("MEMBER");
   const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,15 +52,29 @@ export default function UserEditPage() {
   }, [me]);
 
   const canGrantAdmin = useMemo(() => me?.role === "ADMIN", [me]);
+  const isSelf = useMemo(() => Boolean(me && user && me.id === user.id), [me, user]);
 
   const handleSave = async () => {
     if (!user) return;
     try {
       await patchWithCsrf(`/api/users/${user.id}`, {
         name,
-        role,
-        password: password || undefined,
       });
+      if (canEditRole && role !== user.role) {
+        await patchWithCsrf(`/api/users/${user.id}/role`, { role });
+      }
+      if (avatarFile) {
+        const form = new FormData();
+        form.append("file", avatarFile);
+        const res = await postFormWithCsrf<{ avatarUrl: string }>(`/api/users/${user.id}/avatar`, form);
+        setUser((prev) => (prev ? { ...prev, avatarUrl: res.avatarUrl } : prev));
+      }
+      if (password) {
+        await patchWithCsrf(`/api/users/${user.id}/password`, {
+          password,
+          currentPassword: isSelf ? currentPassword : undefined,
+        });
+      }
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "更新に失敗しました");
@@ -88,6 +105,24 @@ export default function UserEditPage() {
             </Stack>
             <TextField label="ユーザーID" value={user.email} InputProps={{ readOnly: true }} />
             <TextField label="氏名" value={name} onChange={(e) => setName(e.target.value)} />
+            <Stack spacing={1}>
+              <Typography variant="subtitle2">アバター</Typography>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar src={user.avatarUrl || undefined}>{user.name.slice(0, 1)}</Avatar>
+                <Button variant="outlined" component="label">
+                  画像を選択
+                  <input
+                    hidden
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+                  />
+                </Button>
+              </Stack>
+              {avatarFile && (
+                <Typography variant="caption">{avatarFile.name}</Typography>
+              )}
+            </Stack>
 
             <TextField
               label="ロール"
@@ -104,9 +139,17 @@ export default function UserEditPage() {
               </MenuItem>
             </TextField>
 
-            {me?.role === "ADMIN" && user.role !== "ADMIN" && (
+            {isSelf && (
               <TextField
-                label="パスワード変更"
+                label="現在のパスワード"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+            )}
+            {(isSelf || me?.role === "ADMIN") && user.role !== "ADMIN" && (
+              <TextField
+                label="新しいパスワード"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

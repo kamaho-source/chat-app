@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Sora, Space_Grotesk } from "next/font/google";
-import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
 import Providers from "./providers";
 import "./globals.css";
 
@@ -25,15 +23,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const headerStore = await headers();
-  const pathname = headerStore.get("x-pathname") ?? "";
-  const session = cookieStore.get("session_id");
-
-  if (!session && pathname !== "/login" && pathname !== "/users/new") {
-    redirect("/login");
-  }
-
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>

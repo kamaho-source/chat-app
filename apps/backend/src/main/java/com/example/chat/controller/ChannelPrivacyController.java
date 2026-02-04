@@ -31,6 +31,10 @@ public class ChannelPrivacyController {
   @GetMapping("/{id}/members")
   public ResponseEntity<?> members(@PathVariable Long id, Authentication authentication) {
     User me = (User) authentication.getPrincipal();
+    Channel channel = channelRepository.findById(id).orElse(null);
+    if (channel == null || !channel.isActive()) {
+      return ResponseEntity.notFound().build();
+    }
     if (!hasAccess(id, me)) {
       return ResponseEntity.status(403).build();
     }
@@ -45,6 +49,9 @@ public class ChannelPrivacyController {
       return ResponseEntity.status(403).build();
     }
     return channelRepository.findById(id).map(channel -> {
+      if (!channel.isActive()) {
+        return ResponseEntity.notFound().build();
+      }
       User user = userRepository.findById(request.userId()).orElse(null);
       if (user == null) {
         return ResponseEntity.badRequest().body(Map.of("message", "User not found"));
@@ -66,6 +73,9 @@ public class ChannelPrivacyController {
       return ResponseEntity.status(403).build();
     }
     return channelMemberRepository.findById(memberId).map(member -> {
+      if (member.getChannel() != null && !member.getChannel().isActive()) {
+        return ResponseEntity.notFound().build();
+      }
       member.setRole(request.role());
       member.setCanPost(request.canPost());
       channelMemberRepository.save(member);
@@ -79,6 +89,10 @@ public class ChannelPrivacyController {
     if (!isOwnerOrAdmin(id, me)) {
       return ResponseEntity.status(403).build();
     }
+    Channel channel = channelRepository.findById(id).orElse(null);
+    if (channel == null || !channel.isActive()) {
+      return ResponseEntity.notFound().build();
+    }
     if (!channelMemberRepository.existsById(memberId)) {
       return ResponseEntity.notFound().build();
     }
@@ -90,6 +104,9 @@ public class ChannelPrivacyController {
   public ResponseEntity<?> updatePrivacy(@PathVariable Long id, @Valid @RequestBody PrivacyRequest request, Authentication authentication) {
     User me = (User) authentication.getPrincipal();
     return channelRepository.findById(id).map(channel -> {
+      if (!channel.isActive()) {
+        return ResponseEntity.notFound().build();
+      }
       if (!isOwnerOrAdmin(id, me)) {
         return ResponseEntity.status(403).build();
       }

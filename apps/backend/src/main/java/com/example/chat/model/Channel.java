@@ -19,6 +19,9 @@ public class Channel extends BaseEntity {
   @Column(nullable = false)
   private boolean isPrivate = false;
 
+  @Column(nullable = false, columnDefinition = "boolean default true")
+  private boolean active = true;
+
   @ManyToOne(optional = false)
   private User createdBy;
 
@@ -48,6 +51,14 @@ public class Channel extends BaseEntity {
 
   public void setPrivate(boolean aPrivate) {
     isPrivate = aPrivate;
+  }
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public void setActive(boolean active) {
+    this.active = active;
   }
 
   public User getCreatedBy() {

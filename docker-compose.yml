@@ -28,13 +28,20 @@ services:
       DB_PASSWORD: chatapp
       FRONTEND_ORIGIN: http://localhost:3000
       STORAGE_DIR: /app/data
-      OPENROUTER_ENABLED: "false"
+      OPENROUTER_ENABLED: ${OPENROUTER_ENABLED:-false}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/auto}
       SESSION_COOKIE_NAME: session_id
       BOOTSTRAP_ENABLED: "true"
       BOOTSTRAP_EMAIL: kid@example.com
       BOOTSTRAP_NAME: Kid
       BOOTSTRAP_PASSWORD: password123
       BOOTSTRAP_ROLE: ADMIN
+    env_file:
+      - .env
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     command: ./mvnw -q -DskipTests spring-boot:run
     ports:
       - "8000:8000"

@@ -47,9 +47,11 @@ import { ChannelSummary, UserSummary } from "@/lib/types";
 import MessageRenderer from "@/components/chat/MessageRenderer";
 import AttachmentPreview from "@/components/chat/AttachmentPreview";
 import MentionPopper from "@/components/chat/MentionPopper";
+import SockJS from "sockjs-client";
+import { Client, type StompSubscription } from "@stomp/stompjs";
 
 type MessageSummary = {
-  id: number;
+  id: number | null;
   channelId: number;
   senderId: number | null;
   senderName?: string | null;
@@ -149,19 +151,78 @@ export default function HomePage() {
     loadInitial();
   }, [loadInitial]);
 
+  const upsertMessage = useCallback((prev: MessageSummary[], incoming: MessageSummary) => {
+    if (incoming.id == null) return [...prev, incoming];
+    let replaced = false;
+    const next: MessageSummary[] = [];
+    prev.forEach((m) => {
+      if (m.id === incoming.id) {
+        if (!replaced) {
+          next.push({ ...m, ...incoming });
+          replaced = true;
+        }
+      } else {
+        next.push(m);
+      }
+    });
+    if (!replaced) next.push(incoming);
+    return next;
+  }, []);
+
+  const dedupeMessages = useCallback((items: MessageSummary[]) => {
+    const byId = new Map<number, MessageSummary>();
+    const withoutId: MessageSummary[] = [];
+    items.forEach((m) => {
+      if (m.id == null) {
+        withoutId.push(m);
+      } else {
+        byId.set(m.id, m);
+      }
+    });
+    return [...byId.values(), ...withoutId];
+  }, []);
+
   const loadMessages = useCallback(async () => {
     if (!selectedChannelId) return;
     try {
       const data = await fetchJson<MessageSummary[]>(`/api/channels/${selectedChannelId}/messages`);
-      setMessages(data);
+      setMessages(dedupeMessages(data));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Messages load failed");
     }
-  }, [selectedChannelId]);
+  }, [selectedChannelId, dedupeMessages]);
 
   useEffect(() => {
     loadMessages();
   }, [loadMessages]);
+
+  useEffect(() => {
+    if (!selectedChannelId) return;
+    const timer = window.setInterval(() => {
+      loadMessages();
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [selectedChannelId, loadMessages]);
+
+  useEffect(() => {
+    if (!selectedChannelId) return;
+    let subscription: StompSubscription | null = null;
+    const client = new Client({
+      webSocketFactory: () => new SockJS("/ws"),
+      reconnectDelay: 5000,
+      onConnect: () => {
+        subscription = client.subscribe(`/topic/channels/${selectedChannelId}`, (frame) => {
+          const incoming = JSON.parse(frame.body) as MessageSummary;
+          setMessages((prev) => upsertMessage(prev, incoming));
+        });
+      },
+    });
+    client.activate();
+    return () => {
+      subscription?.unsubscribe();
+      client.deactivate();
+    };
+  }, [selectedChannelId, upsertMessage]);
 
   useEffect(() => {
     if (!me?.name) return;
@@ -237,14 +298,14 @@ export default function HomePage() {
         const form = new FormData();
         form.append("content", messageText);
         const created = await postFormWithCsrf<MessageSummary>(`/api/channels/${selectedChannelId}/messages`, form);
-        setMessages((prev) => [...prev, created]);
+        setMessages((prev) => upsertMessage(prev, created));
       } else {
         for (const [idx, file] of pendingFiles.entries()) {
           const form = new FormData();
           if (idx === 0 && messageText) form.append("content", messageText);
           form.append("file", file);
           const created = await postFormWithCsrf<MessageSummary>(`/api/channels/${selectedChannelId}/messages`, form);
-          setMessages((prev) => [...prev, created]);
+          setMessages((prev) => upsertMessage(prev, created));
         }
       }
       setMessageText("");
@@ -472,12 +533,12 @@ export default function HomePage() {
             )}
             <Paper sx={{ flex: 1, p: 2, overflowY: "auto" }} className="cw-scroll">
               <Stack spacing={2}>
-                {messages.map((message) => {
+                {messages.map((message, idx) => {
                   const sender = message.senderId ? usersById.get(message.senderId) : null;
                   const senderName = sender?.name || message.senderName || "System";
                   const senderAvatar = sender?.avatarUrl || message.senderAvatarUrl || undefined;
                   return (
-                    <Paper key={message.id} sx={{ p: 2, bgcolor: "background.paper" }}>
+                    <Paper key={message.id ?? `tmp-${idx}`} className="animate-pop" sx={{ p: 2, bgcolor: "background.paper" }}>
                       <Stack direction="row" spacing={2} alignItems="flex-start">
                         <Avatar src={senderAvatar}>
                           {senderName.slice(0, 1)}
@@ -609,6 +670,19 @@ export default function HomePage() {
             <PersonAddIcon fontSize="small" />
           </ListItemIcon>
           DM開始
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            router.push("/users/edit");
+            setUserMenuAnchor(null);
+          }}
+        >
+          <ListItemIcon>
+            <Avatar sx={{ width: 20, height: 20 }} src={me?.avatarUrl || undefined}>
+              {me?.name?.slice(0, 1)}
+            </Avatar>
+          </ListItemIcon>
+          プロフィール編集
         </MenuItem>
         {me?.role === "ADMIN" && (
           <MenuItem

@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { deleteWithCsrf, fetchJson, patchWithCsrf, postWithCsrf } from "@/lib/api";
-import { ProjectSummary, UserSummary } from "@/lib/types";
+import { ChannelSummary, ProjectSummary, UserSummary } from "@/lib/types";
 
 type ProjectMember = {
   id: number;
   userId: number;
   role: "OWNER" | "MEMBER" | "VIEWER";
   visible: boolean;
+};
+
+type ProjectChannelLink = {
+  id: number;
+  channelId: number;
+  projectId: number;
 };
 
 export default function ProjectDetailPage() {
@@ -19,10 +25,13 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [users, setUsers] = useState<UserSummary[]>([]);
+  const [channels, setChannels] = useState<ChannelSummary[]>([]);
+  const [linkedChannels, setLinkedChannels] = useState<ProjectChannelLink[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [newMemberUserId, setNewMemberUserId] = useState<number | "">("");
   const [newMemberRole, setNewMemberRole] = useState<ProjectMember["role"]>("MEMBER");
   const [newMemberVisible, setNewMemberVisible] = useState(true);
+  const [newChannelId, setNewChannelId] = useState<number | "">("");
 
   useEffect(() => {
     const load = async () => {
@@ -32,9 +41,15 @@ export default function ProjectDetailPage() {
           fetchJson<ProjectMember[]>(`/api/projects/${projectId}/members`),
           fetchJson<UserSummary[]>("/api/users"),
         ]);
+        const [channelData, linkData] = await Promise.all([
+          fetchJson<ChannelSummary[]>("/api/channels"),
+          fetchJson<ProjectChannelLink[]>(`/api/projects/${projectId}/channels`),
+        ]);
         setProject(projectData);
         setMembers(memberData);
         setUsers(userData);
+        setChannels(channelData);
+        setLinkedChannels(linkData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Load failed");
       }
@@ -89,6 +104,29 @@ export default function ProjectDetailPage() {
     try {
       await deleteWithCsrf(`/api/projects/${project.id}/members/${member.id}`);
       setMembers((prev) => prev.filter((m) => m.id !== member.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "削除に失敗しました");
+    }
+  };
+
+  const linkChannel = async () => {
+    if (!project || newChannelId === "") return;
+    try {
+      const created = await postWithCsrf<{ id: number }>(`/api/projects/${project.id}/channels`, {
+        channelId: newChannelId,
+      });
+      setLinkedChannels((prev) => [...prev, { id: created.id, channelId: newChannelId, projectId: project.id }]);
+      setNewChannelId("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "追加に失敗しました");
+    }
+  };
+
+  const unlinkChannel = async (link: ProjectChannelLink) => {
+    if (!project) return;
+    try {
+      await deleteWithCsrf(`/api/projects/${project.id}/channels/${link.id}`);
+      setLinkedChannels((prev) => prev.filter((l) => l.id !== link.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "削除に失敗しました");
     }
@@ -206,6 +244,56 @@ export default function ProjectDetailPage() {
                         </td>
                         <td>
                           <button className="btn btn-sm btn-outline" onClick={() => removeMember(member)}>
+                            削除
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginTop: "16px" }}>
+            <div className="card-body">
+              <h4>チャンネル紐付け</h4>
+              <div className="row" style={{ marginBottom: "12px" }}>
+                <div className="col-9">
+                  <select
+                    className="form-control"
+                    value={newChannelId}
+                    onChange={(e) => setNewChannelId(e.target.value ? Number(e.target.value) : "")}
+                  >
+                    <option value="">チャンネルを選択</option>
+                    {channels.map((channel) => (
+                      <option key={channel.id} value={channel.id}>
+                        #{channel.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-3" style={{ textAlign: "right" }}>
+                  <button className="btn btn-sm" onClick={linkChannel} disabled={newChannelId === ""}>
+                    追加
+                  </button>
+                </div>
+              </div>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>チャンネル</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {linkedChannels.map((link) => {
+                    const channel = channels.find((c) => c.id === link.channelId);
+                    return (
+                      <tr key={link.id}>
+                        <td>#{channel?.name || link.channelId}</td>
+                        <td>
+                          <button className="btn btn-sm btn-outline" onClick={() => unlinkChannel(link)}>
                             削除
                           </button>
                         </td>

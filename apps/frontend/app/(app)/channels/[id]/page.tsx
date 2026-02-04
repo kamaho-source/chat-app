@@ -13,6 +13,8 @@ import {
   Typography,
 } from "@mui/material";
 import { deleteWithCsrf, fetchJson, patchWithCsrf, postFormWithCsrf, postWithCsrf } from "@/lib/api";
+import SockJS from "sockjs-client";
+import { Client, type StompSubscription } from "@stomp/stompjs";
 
 interface ChannelSummary {
   id: number;
@@ -22,7 +24,7 @@ interface ChannelSummary {
 }
 
 interface MessageSummary {
-  id: number;
+  id: number | null;
   channelId: number;
   senderId: number | null;
   senderName?: string | null;
@@ -50,6 +52,35 @@ export default function ChannelDetailPage() {
   const [editContent, setEditContent] = useState<Record<number, string>>({});
   const [newMember, setNewMember] = useState({ userId: "", role: "MEMBER", canPost: true });
   const [settings, setSettings] = useState({ name: "", description: "", isPrivate: false });
+  const upsertMessage = (prev: MessageSummary[], incoming: MessageSummary) => {
+    if (incoming.id == null) return [...prev, incoming];
+    let replaced = false;
+    const next: MessageSummary[] = [];
+    prev.forEach((m) => {
+      if (m.id === incoming.id) {
+        if (!replaced) {
+          next.push({ ...m, ...incoming });
+          replaced = true;
+        }
+      } else {
+        next.push(m);
+      }
+    });
+    if (!replaced) next.push(incoming);
+    return next;
+  };
+  const dedupeMessages = (items: MessageSummary[]) => {
+    const byId = new Map<number, MessageSummary>();
+    const withoutId: MessageSummary[] = [];
+    items.forEach((m) => {
+      if (m.id == null) {
+        withoutId.push(m);
+      } else {
+        byId.set(m.id, m);
+      }
+    });
+    return [...byId.values(), ...withoutId];
+  };
 
   const load = async () => {
     try {
@@ -59,7 +90,7 @@ export default function ChannelDetailPage() {
         fetchJson<ChannelMemberSummary[]>(`/api/channels/${channelId}/members`),
       ]);
       setChannel(c);
-      setMessages(msgs);
+      setMessages(dedupeMessages(msgs));
       setMembers(mems);
       setSettings({ name: c.name, description: c.description || "", isPrivate: c.isPrivate });
     } catch (err) {
@@ -71,6 +102,34 @@ export default function ChannelDetailPage() {
     if (!Number.isNaN(channelId)) load();
   }, [channelId]);
 
+  useEffect(() => {
+    if (Number.isNaN(channelId)) return;
+    const timer = window.setInterval(() => {
+      load();
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [channelId]);
+
+  useEffect(() => {
+    if (Number.isNaN(channelId)) return;
+    let subscription: StompSubscription | null = null;
+    const client = new Client({
+      webSocketFactory: () => new SockJS("/ws"),
+      reconnectDelay: 5000,
+      onConnect: () => {
+        subscription = client.subscribe(`/topic/channels/${channelId}`, (frame) => {
+          const incoming = JSON.parse(frame.body) as MessageSummary;
+          setMessages((prev) => upsertMessage(prev, incoming));
+        });
+      },
+    });
+    client.activate();
+    return () => {
+      subscription?.unsubscribe();
+      client.deactivate();
+    };
+  }, [channelId]);
+
   const sendMessage = async (file?: File) => {
     setError(null);
     try {
@@ -78,7 +137,7 @@ export default function ChannelDetailPage() {
       if (content) form.append("content", content);
       if (file) form.append("file", file);
       const created = await postFormWithCsrf<MessageSummary>(`/api/channels/${channelId}/messages`, form);
-      setMessages((prev) => [...prev, created]);
+      setMessages((prev) => upsertMessage(prev, created));
       setContent("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Send failed");
@@ -188,8 +247,8 @@ export default function ChannelDetailPage() {
           <Stack spacing={2}>
             <Typography variant="h6">メッセージ</Typography>
             <Stack spacing={1}>
-              {messages.map((m) => (
-                <Box key={m.id} sx={{ p: 2, borderRadius: 2, bgcolor: "background.default" }}>
+              {messages.map((m, idx) => (
+                <Box key={m.id ?? `tmp-${idx}`} className="animate-pop" sx={{ p: 2, borderRadius: 2, bgcolor: "background.default" }}>
                   <Typography variant="subtitle2">送信者: {m.senderName || m.senderId || "System"}</Typography>
                   <Typography>{m.content}</Typography>
                   {m.attachmentUrl && (

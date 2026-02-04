@@ -5,14 +5,40 @@ import { ThemeSettings, ThemeSettingsContext } from "@/app/providers";
 import { useContext } from "react";
 
 const MODE_OPTIONS: ThemeSettings["mode"][] = ["light", "dark", "system"];
-const PRIMARY_PRESETS = ["#2f7d32", "#1e5aa8", "#d63f3f", "#f5a623", "#5b6ac8"];
-const BG_PRESETS = ["#f4f6f8", "#f7f3ee", "#f1f5fb", "#11151a"];
+const UX_OPTIONS: ThemeSettings["uxMode"][] = ["kids", "work"];
+const PRIMARY_PRESETS = ["#1b8f7a", "#1e5aa8", "#f97316", "#d63f3f", "#5b6ac8"];
+const BG_PRESETS = ["#f7f2e7", "#f4f6f8", "#f1f5fb", "#11151a"];
 
 export default function ThemeSettingsPanel() {
   const { settings, updateSettings } = useContext(ThemeSettingsContext);
 
   return (
     <Stack spacing={3}>
+      <Box>
+        <Typography variant="subtitle1" fontWeight={700}>
+          使いやすさモード
+        </Typography>
+        <ToggleButtonGroup
+          value={settings.uxMode}
+          exclusive
+          onChange={(_, value) => {
+            if (!value) return;
+            const preset =
+              value === "kids"
+                ? { uxMode: "kids", primary: "#1b8f7a", background: "#f7f2e7" }
+                : { uxMode: "work", primary: "#1e5aa8", background: "#f1f5fb" };
+            updateSettings(preset);
+          }}
+          sx={{ mt: 1 }}
+        >
+          {UX_OPTIONS.map((mode) => (
+            <ToggleButton key={mode} value={mode}>
+              {mode === "kids" ? "キッズ" : "ワーク"}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      </Box>
+
       <Box>
         <Typography variant="subtitle1" fontWeight={700}>
           配色モード
