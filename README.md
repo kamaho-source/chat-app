@@ -1,156 +1,70 @@
-# Chat App (Next.js + Spring Boot + MySQL)
+# Chat App プロジェクト説明
 
-チームチャット、プロジェクト管理、管理者機能を備えたフルスタックアプリです。  
-フロントは Next.js、バックエンドは Spring Boot、DB は MySQL を利用しています。
+このリポジトリは、**チャット・プロジェクト管理・ユーザー管理**を1つにまとめた業務/教育向けWebアプリです。  
+外部の方がコードを読まなくても全体像を把握できるように、目的・機能・使い方を中心にまとめています。
 
-## 技術スタック
-- Frontend: `Next.js 16` / `React 19` / `TypeScript` / `MUI`
-- Backend: `Spring Boot 4` / `Java 17` / `Spring Security` / `JPA (Hibernate)`
-- DB: `MySQL 8.4`
-- Realtime: `WebSocket (STOMP + SockJS)`
-- AI: `OpenRouter` (`@AI` メンションで自動返信)
-- 実行環境: `Docker Compose`
+## 1. このシステムでできること
+- チャンネルを作って、メンバー同士でチャットできます
+- メッセージはリアルタイムで反映されます
+- ファイル添付付きで投稿できます
+- プロジェクトを作成し、メンバー・タスク・ファイルを管理できます
+- 管理者/マネージャーはユーザー権限やチャンネル公開範囲を管理できます
+- `@AI` を含む投稿でAI自動返信を受けられます（OpenRouter設定時）
 
-## ディレクトリ構成
-```text
-chat-app/
-├─ apps/
-│  ├─ backend/               # Spring Boot API
-│  │  └─ src/main/java/com/example/chat/
-│  │     ├─ controller/      # 各REST APIコントローラ
-│  │     ├─ service/         # メッセージ/AI/ストレージ処理
-│  │     ├─ repository/      # JPAリポジトリ
-│  │     ├─ model/           # Entity
-│  │     ├─ security/        # 認証/認可フィルタ
-│  │     └─ config/          # WebSocket/App設定
-│  └─ frontend/              # Next.js App Router
-│     ├─ app/                # 画面 (ログイン/チャット/管理等)
-│     ├─ components/         # UIコンポーネント
-│     ├─ lib/                # APIクライアント等
-│     └─ proxy.ts            # 認証リダイレクト + request header付与
-├─ scripts/                  # 開発起動スクリプト
-├─ docker-compose.yml
-├─ .env.example
-└─ README.md
-```
+## 2. 想定ユーザー
+- 小学生〜中学生（PC操作ができる学習者）
+- 教員/講師/運用担当
+- 社会人の業務利用者（管理者・マネージャー）
 
-## 起動方法（推奨: Docker）
+## 3. 画面と役割（ざっくり）
+- **ログイン画面**: サインイン
+- **メインチャット画面**: チャンネル一覧、メッセージ閲覧/投稿、ファイル送信
+- **プロジェクト画面**: プロジェクト詳細、メンバー追加、タスク管理、ファイル管理
+- **管理者ダッシュボード**: ユーザー権限変更、チャンネル管理、統計確認
+- **マネージャーダッシュボード**: チャンネル公開設定、利用状況確認
+- **プロフィール編集**: 名前、アバター、パスワード更新
 
-### 1) 環境変数を用意
+## 4. 権限の考え方
+- **ADMIN（管理者）**: すべての管理機能
+- **MANAGER（マネージャー）**: 運用・管理の一部機能
+- **MEMBER（一般）**: 通常利用
+- **VIEWER（閲覧のみ）**: 投稿不可で閲覧中心
+
+チャンネルは「限定公開（private）」にでき、閲覧可能ユーザーをチェックで選択できます。
+
+## 5. リアルタイム反映について
+- WebSocketで新着メッセージを即時反映
+- 接続不安定時はポーリングで補完
+- そのため「リロードしないと見えない」状態を避ける設計です
+
+## 6. データの扱い（削除ポリシー）
+- チャンネル削除は**論理削除（is_active）**です
+- 関連するメッセージやメンバー、プロジェクト連携は履歴として保持します
+
+## 7. セキュリティ/運用上のポイント
+- 未認証アクセス時は `/login` にリダイレクト
+- CSRF対策あり
+- APIキーは `.env` で管理（Gitに載せない）
+- `.env.example` は共有用テンプレートとして公開可能
+
+## 8. 起動方法（Docker）
+
+### 8-1. 初回準備
 ```bash
 cp .env.example .env
 ```
 
-必要に応じて `.env` を編集してください。  
-AI を使う場合は `OPENROUTER_API_KEY` が必須です。
-
-### 2) 起動
+### 8-2. 起動
 ```bash
 docker compose up -d --build
 ```
 
-### 3) アクセス先
+### 8-3. アクセス先
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:8000`
-- WebSocket endpoint: `http://localhost:8000/ws`
 
-### 4) 停止
-```bash
-docker compose down
-```
-
-## ローカル起動（Dockerなし）
-
-### 前提
-- Java 17
-- Node.js 20+
-- MySQL 8+
-
-### 起動
-```bash
-./scripts/dev-local.sh
-```
-
-## 初期ログイン情報（Bootstrap）
-`docker-compose.yml` の初期値で管理者ユーザーが作成されます。
-- User ID(email): `kid@example.com`
-- Password: `password123`
-- Role: `ADMIN`
-
-必要なら `docker-compose.yml` の `BOOTSTRAP_*` を変更してください。
-
-## 主な機能
-- 認証（ログイン/ログアウト/CSRF）
-- チャンネル作成、限定公開、投稿制限
-- メッセージ投稿（テキスト/ファイル）
-- リアルタイム更新（WS）+ ポーリングフォールバック
-- メンション候補表示
-- プロジェクト、タスク、プロジェクトファイル管理
-- 管理者/マネージャーダッシュボード
-- チャンネルの論理削除（`is_active`）
-- AI返信（`@AI` を含む投稿で自動応答）
-
-## API一覧（主要）
-
-### 認証・共通
-- `GET /api/csrf`
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-
-### ユーザー
-- `GET /api/users`
-- `GET /api/users/{id}`
-- `PATCH /api/users/{id}`
-- `PATCH /api/users/{id}/role`
-- `PATCH /api/users/{id}/status`
-- `PATCH /api/users/{id}/password`
-- `POST /api/users/{id}/avatar`
-- `DELETE /api/users/{id}`
-
-### チャンネル・メッセージ
-- `GET /api/channels`
-- `GET /api/channels/{id}`
-- `POST /api/channels`
-- `PATCH /api/channels/{id}`
-- `DELETE /api/channels/{id}` (論理削除)
-- `PATCH /api/channels/{id}/privacy`
-- `GET /api/channels/{id}/members`
-- `POST /api/channels/{id}/members`
-- `PATCH /api/channels/{id}/members/{memberId}`
-- `DELETE /api/channels/{id}/members/{memberId}`
-- `GET /api/channels/{id}/messages`
-- `POST /api/channels/{id}/messages`
-- `PATCH /api/messages/{id}`
-
-### プロジェクト
-- `GET /api/projects`
-- `GET /api/projects/{id}`
-- `POST /api/projects`
-- `PATCH /api/projects/{id}`
-- `DELETE /api/projects/{id}`
-- `GET /api/projects/{id}/members`
-- `POST /api/projects/{id}/members`
-- `PATCH /api/projects/{id}/members/{memberId}`
-- `DELETE /api/projects/{id}/members/{memberId}`
-- `GET /api/projects/{id}/channels`
-- `POST /api/projects/{id}/channels`
-- `DELETE /api/projects/{id}/channels/{linkId}`
-- `GET /api/projects/{id}/messages`
-- `POST /api/projects/{id}/messages`
-- `GET /api/projects/{id}/files`
-- `POST /api/projects/{id}/files`
-- `DELETE /api/projects/{id}/files/{fileId}`
-- `GET /api/projects/{id}/tasks`
-- `POST /api/projects/{id}/tasks`
-
-### 管理
-- `GET /api/admin/stats`
-
-## OpenRouter設定
-
-`.env` に設定してください（`.env.example` あり）。
+## 9. AI機能（OpenRouter）
+AI返信を使う場合は `.env` に以下を設定します。
 
 ```env
 OPENROUTER_ENABLED=true
@@ -163,12 +77,20 @@ OPENROUTER_MODEL=openai/gpt-oss-120b:free
 docker compose up -d --build backend
 ```
 
-## よく使うコマンド
-- 全体起動: `docker compose up -d --build`
-- バックエンドだけ再起動: `docker compose restart backend`
-- フロントだけ再起動: `docker compose restart frontend`
-- ログ確認: `docker compose logs -f backend`
+## 10. 代表的な利用シーン
+- 授業内の連絡・質問チャット
+- プロジェクト単位でのタスク進捗共有
+- 管理者による参加者権限の調整
+- 学習者向けのAI補助（`@AI`）
 
-## 注意事項
-- `.env` は機密情報を含むため Git 管理しません（`.gitignore` 済み）。
-- 共有用には `.env.example` を使ってください。
+## 11. よく使う運用コマンド
+- 全体再起動: `docker compose restart`
+- バックエンドログ確認: `docker compose logs -f backend`
+- フロントログ確認: `docker compose logs -f frontend`
+- 停止: `docker compose down`
+
+---
+必要であれば、このREADMEに次を追加できます。
+- 画面キャプチャ付き「利用マニュアル版」
+- 運用フロー図（ユーザー追加→権限付与→運用開始）
+- 導入先向けチェックリスト（初期設定・バックアップ・障害対応）
