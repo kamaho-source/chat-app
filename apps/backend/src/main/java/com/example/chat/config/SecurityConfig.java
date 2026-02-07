@@ -59,6 +59,7 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .securityContext(securityContext -> securityContext.requireExplicitSave(false))
         .authorizeHttpRequests(auth -> auth
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/channels", "/api/channels/*").permitAll()
             .requestMatchers("/api/auth/register", "/api/auth/register-child", "/api/auth/login", "/api/auth/logout", "/api/auth/classroom-login", "/api/auth/guest", "/api/csrf", "/ws/**").permitAll()
