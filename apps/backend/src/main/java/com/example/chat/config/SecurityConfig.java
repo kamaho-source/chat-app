@@ -4,6 +4,7 @@ import com.example.chat.security.CheckUserActiveFilter;
 import com.example.chat.security.RestAccessDeniedHandler;
 import com.example.chat.security.RestAuthenticationEntryPoint;
 import com.example.chat.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,23 +33,29 @@ public class SecurityConfig {
   private final CheckUserActiveFilter checkUserActiveFilter;
   private final RestAuthenticationEntryPoint authenticationEntryPoint;
   private final RestAccessDeniedHandler accessDeniedHandler;
+  private final boolean csrfCookieSecure;
 
   public SecurityConfig(AppProperties appProperties,
                         UserRepository userRepository,
                         CheckUserActiveFilter checkUserActiveFilter,
                         RestAuthenticationEntryPoint authenticationEntryPoint,
-                        RestAccessDeniedHandler accessDeniedHandler) {
+                        RestAccessDeniedHandler accessDeniedHandler,
+                        @Value("${APP_ENV:development}") String appEnv) {
     this.appProperties = appProperties;
     this.userRepository = userRepository;
     this.checkUserActiveFilter = checkUserActiveFilter;
     this.authenticationEntryPoint = authenticationEntryPoint;
     this.accessDeniedHandler = accessDeniedHandler;
+    this.csrfCookieSecure = "production".equalsIgnoreCase(appEnv);
   }
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
-        .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+        .csrf(csrf -> csrf
+            .csrfTokenRepository(csrfTokenRepository())
+            .ignoringRequestMatchers("/api/auth/login", "/api/auth/register")
+        )
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .securityContext(securityContext -> securityContext.requireExplicitSave(false))
         .authorizeHttpRequests(auth -> auth
@@ -101,5 +108,13 @@ public class SecurityConfig {
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;
+  }
+
+  @Bean
+  public CookieCsrfTokenRepository csrfTokenRepository() {
+    CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+    repository.setCookiePath("/");
+    repository.setCookieCustomizer(cookie -> cookie.sameSite("Lax").secure(csrfCookieSecure));
+    return repository;
   }
 }
