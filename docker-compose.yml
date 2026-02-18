@@ -26,7 +26,7 @@ services:
       DB_NAME: chatapp
       DB_USER: chatapp
       DB_PASSWORD: chatapp
-      FRONTEND_ORIGIN: http://localhost:3000
+      SPRING_PROFILE: ${SPRING_PROFILE:-local}
       STORAGE_DIR: /app/data
       OPENROUTER_ENABLED: ${OPENROUTER_ENABLED:-false}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
@@ -53,14 +53,14 @@ services:
       context: ./apps/frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE: ""
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-}
         NEXT_PUBLIC_WS_URL: /ws
         BACKEND_URL: http://backend:8000
     working_dir: /app
     volumes:
       - ./apps/frontend:/app
     environment:
-      NEXT_PUBLIC_API_BASE: ""
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-}
       NEXT_PUBLIC_WS_URL: /ws
       BACKEND_URL: http://backend:8000
       NODE_ENV: development

@@ -1,5 +1,10 @@
+spring:
+  profiles:
+    active: ${SPRING_PROFILE:local}
+
 server:
   port: 8000
+  forward-headers-strategy: framework  # Cloudflare Tunnel経由のHTTPS認識に必要
   servlet:
     session:
       cookie:
@@ -7,7 +12,11 @@ server:
         same-site: lax
         http-only: true
 
+---
 spring:
+  config:
+    activate:
+      on-profile: local
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:chatapp}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${DB_USER:chatapp}
@@ -29,7 +38,42 @@ app:
     model: ${OPENROUTER_MODEL:openrouter/auto}
     enabled: ${OPENROUTER_ENABLED:false}
   security:
-    frontend-origin: ${FRONTEND_ORIGIN:http://localhost:3000}
+    frontend-origin: http://localhost:3000
+    session-cookie-name: ${SESSION_COOKIE_NAME:session_id}
+  bootstrap:
+    enabled: ${BOOTSTRAP_ENABLED:true}
+    email: ${BOOTSTRAP_EMAIL:kid@example.com}
+    name: ${BOOTSTRAP_NAME:Kid}
+    password: ${BOOTSTRAP_PASSWORD:password123}
+    role: ${BOOTSTRAP_ROLE:ADMIN}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:chatapp}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USER:chatapp}
+    password: ${DB_PASSWORD:chatapp}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 1GB
+      max-request-size: 1GB
+
+app:
+  storage:
+    base-dir: ${STORAGE_DIR:./data}
+  ai:
+    openrouter-api-key: ${OPENROUTER_API_KEY:}
+    model: ${OPENROUTER_MODEL:openrouter/auto}
+    enabled: ${OPENROUTER_ENABLED:false}
+  security:
+    frontend-origin: https://kamaho-chat.kazuyukitech.com
     session-cookie-name: ${SESSION_COOKIE_NAME:session_id}
   bootstrap:
     enabled: ${BOOTSTRAP_ENABLED:true}
