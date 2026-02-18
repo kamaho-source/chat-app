@@ -27,6 +27,7 @@ services:
       DB_USER: chatapp
       DB_PASSWORD: chatapp
       SPRING_PROFILE: ${SPRING_PROFILE:-local}
+      APP_ENV: ${APP_ENV:-development}
       STORAGE_DIR: /app/data
       OPENROUTER_ENABLED: ${OPENROUTER_ENABLED:-false}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
