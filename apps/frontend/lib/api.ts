@@ -4,6 +4,12 @@ let csrfHeaderName = "";
 let csrfToken = "";
 let csrfReady = false;
 
+export function resetCsrf() {
+  csrfToken = "";
+  csrfHeaderName = "";
+  csrfReady = false;
+}
+
 export async function ensureCsrf(): Promise<{ csrfToken: string; csrfHeaderName: string }> {
   if (csrfReady) return { csrfToken, csrfHeaderName };
   const res = await fetch(`${API_BASE}/api/csrf`, {

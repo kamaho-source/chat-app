@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SettingsDrawer from "@/components/SettingsDrawer";
+import { resetCsrf } from "@/lib/api";
 
 type ThemeModeSetting = "light" | "dark" | "system";
 type UxModeSetting = "kids" | "work";
@@ -114,10 +115,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           pathname !== "/users/new";
         if (shouldRedirect && !redirectingRef.current) {
           redirectingRef.current = true;
+          resetCsrf();
           window.location.href = "/login";
           return response;
         }
-        if (url.includes("/api/channels") && response.status === 403) {
+        if (response.status === 403 && !shouldRedirect) {
           const now = Date.now();
           if (now - lastToastAt.current > 3000) {
             lastToastAt.current = now;
