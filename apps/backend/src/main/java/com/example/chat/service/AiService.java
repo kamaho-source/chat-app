@@ -47,7 +47,7 @@ public class AiService {
         .build();
     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() >= 400) {
-      return "AI response failed (HTTP " + response.statusCode() + ").";
+      return "AI response failed (HTTP " + response.statusCode() + "): " + response.body();
     }
     JsonNode root = objectMapper.readTree(response.body());
     JsonNode content = root.path("choices").path(0).path("message").path("content");

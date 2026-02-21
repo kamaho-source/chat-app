@@ -438,7 +438,7 @@ export default function HomePage() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" fontWeight={700}>
-            Chatwork Clone
+            鎌倉児童ホームチャット
           </Typography>
           <Chip label={activeChannel ? renderChannelLabel(activeChannel) : "チャンネル未選択"} />
           <Box sx={{ flex: 1 }} />
