@@ -32,7 +32,18 @@ interface MessageSummary {
   content: string | null;
   attachmentUrl?: string | null;
   edited: boolean;
+  createdAt?: string | null;
 }
+
+const formatJST = (iso: string) =>
+  new Date(iso).toLocaleString("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 interface ChannelMemberSummary {
   id: number;
@@ -251,8 +262,13 @@ export default function ChannelDetailPage() {
                 const messageId = m.id;
                 return (
                   <Box key={messageId ?? `tmp-${idx}`} className="animate-pop" sx={{ p: 2, borderRadius: 2, bgcolor: "background.default" }}>
-                    <Typography variant="subtitle2">送信者: {m.senderName || m.senderId || "System"}</Typography>
-                    <Typography>{m.content}</Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography variant="subtitle2">{m.senderName || m.senderId || "System"}</Typography>
+                      {m.createdAt && (
+                        <Typography variant="caption" color="text.secondary">{formatJST(m.createdAt)}</Typography>
+                      )}
+                    </Stack>
+                    <Typography sx={{ fontSize: "1.05rem", mt: 0.5 }}>{m.content}</Typography>
                     {m.attachmentUrl && (
                       <Typography variant="caption">添付: {m.attachmentUrl}</Typography>
                     )}

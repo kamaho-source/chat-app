@@ -98,8 +98,13 @@ export default function ProjectChatPage() {
           <div style={{ maxHeight: 360, overflow: "auto", marginTop: "16px" }}>
             {messages.map((msg) => (
               <div key={msg.id} className="animate-pop" style={{ marginBottom: "12px" }}>
-                <strong>{resolveName(msg.senderId)}</strong>
-                <p style={{ margin: "4px 0" }}>{msg.content}</p>
+                <span style={{ fontWeight: 600 }}>{resolveName(msg.senderId)}</span>
+                {msg.createdAt && (
+                  <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "#888" }}>
+                    {new Date(msg.createdAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                )}
+                <p style={{ margin: "4px 0", fontSize: "1.05rem" }}>{msg.content}</p>
               </div>
             ))}
           </div>

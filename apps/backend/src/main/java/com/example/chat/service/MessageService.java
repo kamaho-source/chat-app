@@ -104,7 +104,7 @@ public class MessageService {
       Message saved = messageRepository.save(aiMessage);
       safeBroadcast("/topic/channels/" + channel.getId(), MessageSummary.from(saved));
     } catch (Exception ignored) {
-      safeBroadcast("/topic/channels/" + channel.getId(), new MessageSummary(null, channel.getId(), null, null, null, "AI reply failed", null, false));
+      safeBroadcast("/topic/channels/" + channel.getId(), new MessageSummary(null, channel.getId(), null, null, null, "AI reply failed", null, false, null));
     }
   }
 
@@ -149,7 +149,7 @@ public class MessageService {
     }
   }
 
-  public record MessageSummary(Long id, Long channelId, Long senderId, String senderName, String senderAvatarUrl, String content, String attachmentUrl, boolean edited) {
+  public record MessageSummary(Long id, Long channelId, Long senderId, String senderName, String senderAvatarUrl, String content, String attachmentUrl, boolean edited, java.time.Instant createdAt) {
     public static MessageSummary from(Message message) {
       User sender = message.getSender();
       return new MessageSummary(
@@ -160,7 +160,8 @@ public class MessageService {
           sender != null ? sender.getAvatarUrl() : null,
           message.getContent(),
           message.getAttachmentUrl(),
-          message.isEdited()
+          message.isEdited(),
+          message.getCreatedAt()
       );
     }
   }
