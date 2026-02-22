@@ -69,6 +69,8 @@ type ChannelMeta = {
   isDefault?: boolean;
 };
 
+type ChannelMemberRecord = { id: number; userId: number; role: string; canPost: boolean };
+
 const SIDEBAR_KEY = "sidebar-collapsed";
 
 export default function HomePage() {
@@ -90,6 +92,7 @@ export default function HomePage() {
   const [channelDialogOpen, setChannelDialogOpen] = useState(false);
   const [dmDialogOpen, setDmDialogOpen] = useState(false);
   const [accessDialogOpen, setAccessDialogOpen] = useState(false);
+  const [channelMemberRecords, setChannelMemberRecords] = useState<Record<number, ChannelMemberRecord[]>>({});
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [passwordTargetId, setPasswordTargetId] = useState<number | null>(null);
   const [newChannel, setNewChannel] = useState({ name: "", description: "", isPrivate: false, postingRestricted: false });
@@ -373,12 +376,47 @@ export default function HomePage() {
     }
   };
 
+  const loadAccessMembers = useCallback(async (channelId: number) => {
+    try {
+      const members = await fetchJson<ChannelMemberRecord[]>(`/api/channels/${channelId}/members`);
+      setChannelMemberRecords((prev) => ({ ...prev, [channelId]: members }));
+      setChannelMeta((prev) => ({
+        ...prev,
+        [channelId]: { ...prev[channelId], members: members.map((m) => m.userId) },
+      }));
+    } catch {
+      // 権限がない場合などは無視
+    }
+  }, []);
+
   const handleAccessSave = async () => {
-    if (!activeChannel) return;
+    if (!activeChannel || !selectedChannelId) return;
     try {
       await patchWithCsrf(`/api/channels/${activeChannel.id}/privacy`, {
         isPrivate: activeChannel.isPrivate,
       });
+
+      const desiredUserIds = channelMeta[selectedChannelId]?.members || [];
+      const actualRecords = channelMemberRecords[selectedChannelId] || [];
+      const actualUserIds = actualRecords.map((m) => m.userId);
+
+      for (const userId of desiredUserIds) {
+        if (!actualUserIds.includes(userId)) {
+          await postWithCsrf(`/api/channels/${selectedChannelId}/members`, {
+            userId,
+            role: "MEMBER",
+            canPost: true,
+          });
+        }
+      }
+
+      for (const record of actualRecords) {
+        if (!desiredUserIds.includes(record.userId)) {
+          await deleteWithCsrf(`/api/channels/${selectedChannelId}/members/${record.id}`);
+        }
+      }
+
+      await loadAccessMembers(selectedChannelId);
       const refreshed = await fetchJson<ChannelSummary[]>("/api/channels");
       setChannels(refreshed);
       setAccessDialogOpen(false);
@@ -513,7 +551,10 @@ export default function HomePage() {
           <Stack spacing={1} sx={{ p: 2 }}>
             <Button
               variant="outlined"
-              onClick={() => setAccessDialogOpen(true)}
+              onClick={() => {
+                setAccessDialogOpen(true);
+                if (selectedChannelId) loadAccessMembers(selectedChannelId);
+              }}
               startIcon={<AdminPanelSettingsIcon />}
               disabled={!me || (me.role !== "ADMIN" && me.role !== "MANAGER")}
             >
