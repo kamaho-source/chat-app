@@ -38,16 +38,16 @@ public class AppProperties {
   }
 
   public static class Ai {
-    private String openrouterApiKey = "";
-    private String model = "openrouter/auto";
+    private String apiKey = "";
+    private String model = "gpt-4o-mini";
     private boolean enabled = false;
 
-    public String getOpenrouterApiKey() {
-      return openrouterApiKey;
+    public String getApiKey() {
+      return apiKey;
     }
 
-    public void setOpenrouterApiKey(String openrouterApiKey) {
-      this.openrouterApiKey = openrouterApiKey;
+    public void setApiKey(String apiKey) {
+      this.apiKey = apiKey;
     }
 
     public String getModel() {

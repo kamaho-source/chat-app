@@ -28,7 +28,7 @@ public class AiService {
   }
 
   public String generateReply(String prompt) throws IOException, InterruptedException {
-    if (!properties.getAi().isEnabled() || properties.getAi().getOpenrouterApiKey().isBlank()) {
+    if (!properties.getAi().isEnabled() || properties.getAi().getApiKey().isBlank()) {
       return "AI is not configured.";
     }
     Map<String, Object> payload = Map.of(
@@ -37,12 +37,10 @@ public class AiService {
     );
     String body = objectMapper.writeValueAsString(payload);
     HttpRequest request = HttpRequest.newBuilder()
-        .uri(URI.create("https://openrouter.ai/api/v1/chat/completions"))
+        .uri(URI.create("https://api.openai.com/v1/chat/completions"))
         .timeout(Duration.ofSeconds(30))
-        .header("Authorization", "Bearer " + properties.getAi().getOpenrouterApiKey())
+        .header("Authorization", "Bearer " + properties.getAi().getApiKey())
         .header("Content-Type", "application/json")
-        .header("HTTP-Referer", properties.getSecurity().getFrontendOrigin())
-        .header("X-Title", "chat-app")
         .POST(HttpRequest.BodyPublishers.ofString(body))
         .build();
     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

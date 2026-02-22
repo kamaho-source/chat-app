@@ -29,9 +29,9 @@ services:
       SPRING_PROFILE: ${SPRING_PROFILE:-local}
       APP_ENV: ${APP_ENV:-development}
       STORAGE_DIR: /app/data
-      OPENROUTER_ENABLED: ${OPENROUTER_ENABLED:-false}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/auto}
+      OPENAI_ENABLED: ${OPENAI_ENABLED:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       SESSION_COOKIE_NAME: session_id
       BOOTSTRAP_ENABLED: "true"
       BOOTSTRAP_EMAIL: kid@example.com

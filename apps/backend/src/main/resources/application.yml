@@ -34,9 +34,9 @@ app:
   storage:
     base-dir: ${STORAGE_DIR:./data}
   ai:
-    openrouter-api-key: ${OPENROUTER_API_KEY:}
-    model: ${OPENROUTER_MODEL:openrouter/auto}
-    enabled: ${OPENROUTER_ENABLED:false}
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+    enabled: ${OPENAI_ENABLED:false}
   security:
     frontend-origin: http://localhost:3000
     session-cookie-name: ${SESSION_COOKIE_NAME:session_id}
@@ -69,9 +69,9 @@ app:
   storage:
     base-dir: ${STORAGE_DIR:./data}
   ai:
-    openrouter-api-key: ${OPENROUTER_API_KEY:}
-    model: ${OPENROUTER_MODEL:openrouter/auto}
-    enabled: ${OPENROUTER_ENABLED:false}
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+    enabled: ${OPENAI_ENABLED:false}
   security:
     frontend-origin: https://kamaho-chat.kazuyukitech.com
     session-cookie-name: ${SESSION_COOKIE_NAME:session_id}
