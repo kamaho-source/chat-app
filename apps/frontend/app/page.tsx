@@ -546,6 +546,18 @@ export default function HomePage() {
                         <Stack spacing={1} sx={{ flex: 1 }}>
                           <Stack direction="row" spacing={1} alignItems="center">
                             <Typography variant="subtitle2">{senderName}</Typography>
+                            {message.createdAt && (
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(message.createdAt).toLocaleString("ja-JP", {
+                                  timeZone: "Asia/Tokyo",
+                                  year: "numeric",
+                                  month: "2-digit",
+                                  day: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </Typography>
+                            )}
                             {message.edited && <Chip size="small" label="編集済み" />}
                           </Stack>
                           {message.content && <MessageRenderer content={message.content} />}

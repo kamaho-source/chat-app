@@ -29,7 +29,7 @@ export default function MessageRenderer({ content }: Props) {
         },
         p({ children }) {
           return (
-            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+            <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
               {children}
             </Typography>
           );
